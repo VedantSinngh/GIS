@@ -1,0 +1,178 @@
+/* Bugatti Demo Design System */
+:root {
+  /* Colors */
+  --color-canvas: #000000;
+  --color-primary: #ffffff;
+  --color-link: #c3d9f3;
+  --color-surface-soft: #0d0d0d;
+  --color-surface-card: #141414;
+  --color-surface-elevated: #1f1f1f;
+  --color-hairline: #262626;
+  --color-hairline-strong: #3a3a3a;
+  --color-on-dark: #ffffff;
+  --color-body: #cccccc;
+  --color-body-strong: #e6e6e6;
+  --color-muted: #999999;
+  --color-muted-soft: #666666;
+  --color-warning: #d4a017;
+  --color-success: #5fa657;
+
+  /* Spacing */
+  --spacing-xxs: 4px;
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --spacing-xxl: 64px;
+  --spacing-section: 120px;
+
+  /* Border radius */
+  --radius-none: 0px;
+  --radius-pill: 9999px;
+  --radius-full: 9999px;
+
+  /* Typography */
+  --font-display: "Saira Condensed", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-text: "Cormorant Garamond", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Mono", monospace;
+
+  /* Typography scale */
+  --typography-display-xl: 64px;
+  --letterspacing-display-xl: 4px;
+  --typography-display-lg: 48px;
+  --letterspacing-display-lg: 3px;
+  --typography-display-md: 32px;
+  --letterspacing-display-md: 2px;
+  --typography-display-sm: 24px;
+  --letterspacing-display-sm: 1.5px;
+  --typography-wordmark: 14px;
+  --letterspacing-wordmark: 6px;
+  --typography-title-md: 20px;
+  --letterspacing-title-md: 1px;
+  --typography-title-sm: 16px;
+  --letterspacing-title-sm: 1.5px;
+  --typography-caption-uppercase: 11px;
+  --letterspacing-caption: 2px;
+  --typography-body-md: 16px;
+  --letterspacing-body: 0;
+  --typography-body-sm: 14px;
+  --typography-button: 14px;
+  --letterspacing-button: 2.5px;
+  --typography-nav-link: 12px;
+  --letterspacing-nav-link: 2px;
+}
+
+/* Global reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  background: var(--color-canvas);
+  color: var(--color-on-dark);
+  font-family: var(--font-text);
+  line-height: 1.5;
+}
+
+/* Top navigation */
+.top-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-lg);
+  background: transparent;
+  z-index: 1000;
+}
+.top-nav .nav-link {
+  font-family: var(--font-mono);
+  font-size: var(--typography-nav-link);
+  letter-spacing: var(--letterspacing-nav-link);
+  text-transform: uppercase;
+  color: var(--color-on-dark);
+}
+.top-nav .wordmark {
+  font-family: var(--font-display);
+  font-size: var(--typography-wordmark);
+  letter-spacing: var(--letterspacing-wordmark);
+  text-transform: uppercase;
+  color: var(--color-on-dark);
+}
+
+/* Hero band */
+.hero {
+  position: relative;
+  width: 100%;
+  height: 80vh;
+  background: url('hero-placeholder.png') center/cover no-repeat;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding-top: var(--spacing-section);
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: var(--typography-display-xl);
+  letter-spacing: var(--letterspacing-display-xl);
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-md);
+}
+.hero .caption {
+  font-family: var(--font-mono);
+  font-size: var(--typography-caption-uppercase);
+  letter-spacing: var(--letterspacing-caption);
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-lg);
+}
+
+/* Primary button */
+.button-primary {
+  font-family: var(--font-mono);
+  font-size: var(--typography-button);
+  letter-spacing: var(--letterspacing-button);
+  text-transform: uppercase;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-pill);
+  padding: 12px 32px;
+  height: 44px;
+  cursor: pointer;
+}
+.button-primary:hover {
+  opacity: 0.8;
+}
+
+/* Content sections */
+.section {
+  padding: var(--spacing-section) var(--spacing-lg);
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* Footer */
+.footer {
+  background: var(--color-canvas);
+  color: var(--color-muted);
+  padding: var(--spacing-section) var(--spacing-lg);
+  text-align: center;
+  font-size: var(--typography-body-sm);
+}
+.footer .wordmark {
+  font-family: var(--font-display);
+  font-size: var(--typography-wordmark);
+  letter-spacing: var(--letterspacing-wordmark);
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin-top: var(--spacing-md);
+}
