@@ -1,95 +1,89 @@
-from fastapi import FastAPI, Query, HTTPException
+"""
+Wildfire & Air Quality Risk Monitor — FastAPI Backend
+======================================================
+Endpoints:
+  GET /hotspots            — core data feed (synthetic | live | hybrid)
+  GET /spread/{id}         — elliptical fire-spread rings
+  GET /exposure/{id}       — settlement exposure + ETA
+  GET /alerts              — auto-generated sorted alert list
+  GET /analytics           — aggregated stats for dashboard
+  GET /export/csv          — CSV download
+  GET /export/geojson      — GeoJSON download
+  GET /risk-cone/{id}      — legacy cone (backwards compat)
+  GET /healthz             — health check
+"""
+
+from __future__ import annotations
+
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List
-import hashlib
 
-from config import DEFAULT_BBOX
-from models import Hotspot, RiskCone
-from services.firms import fetch_firms_hotspots
-from services.meteo import fetch_wind_data
-from services.risk import calculate_risk_score, generate_risk_cone
+import config
+from routers import hotspots, spread, exposure, analytics, export
 
-app = FastAPI(title="Wildfire Risk Monitor API")
+app = FastAPI(
+    title="Wildfire Risk Monitor API",
+    description=(
+        "Heuristic decision-support tool for wildfire spread risk in India. "
+        "DATA_SOURCE=synthetic means all hotspot data is simulated; algorithms and "
+        "formulas are real. Set DATA_SOURCE=live for NASA FIRMS."
+    ),
+    version="2.0.0",
+)
 
-# Enable CORS for frontend
+# ── CORS ──────────────────────────────────────────────────────────────────────
+# Fix: allow_credentials must be False when allow_origins includes "*"
+_origins = config.ALLOWED_ORIGINS
+_allow_credentials = "*" not in _origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=_origins,
+    allow_credentials=_allow_credentials,
+    allow_methods=["GET"],
     allow_headers=["*"],
 )
 
-@app.get("/hotspots", response_model=List[Hotspot])
-def get_hotspots(bbox: str = Query(DEFAULT_BBOX, description="Bounding box in format W,S,E,N")):
-    """
-    Fetch active FIRMS hotspots, enrich with wind and NDVI, and compute risk score.
-    """
-    try:
-        firms_data = fetch_firms_hotspots(bbox)
-    except Exception as e:
-        raise HTTPException(status_code=503, detail=f"FIRMS data temporarily unavailable: {str(e)}")
-        
-    hotspots = []
-    
-    for pt in firms_data:
-        lat = pt["latitude"]
-        lon = pt["longitude"]
-        
-        # Generate a stable ID for the hotspot
-        id_str = f"{lat}_{lon}_{pt['acq_date']}_{pt['acq_time']}"
-        pt_id = hashlib.md5(id_str.encode()).hexdigest()
-        
-        # Fetch wind data
-        wind = fetch_wind_data(lat, lon)
-        wind_speed = wind["wind_speed"]
-        wind_direction = wind["wind_direction"]
-        
-        # NDVI lookup (skipped for first pass, will be None)
-        ndvi = None 
-        
-        # Calculate risk score
-        risk_score = calculate_risk_score(
-            brightness=pt["brightness"],
-            confidence=pt["confidence"],
-            wind_speed=wind_speed,
-            ndvi=ndvi
-        )
-        
-        hotspot = Hotspot(
-            id=pt_id,
-            latitude=lat,
-            longitude=lon,
-            brightness=pt["brightness"],
-            confidence=pt["confidence"],
-            acq_date=pt["acq_date"],
-            acq_time=pt["acq_time"],
-            wind_speed=wind_speed,
-            wind_direction=wind_direction,
-            ndvi=ndvi,
-            risk_score=risk_score
-        )
-        hotspots.append(hotspot)
-        
-    return hotspots
+# ── Routers ───────────────────────────────────────────────────────────────────
+app.include_router(hotspots.router)
+app.include_router(spread.router)
+app.include_router(exposure.router)
+app.include_router(analytics.router)
+app.include_router(export.router)
+
+
+# ── Legacy endpoint (backwards compat with old frontend) ─────────────────────
+from fastapi import Query as Q
+from typing import Any, Dict
 
 @app.get("/risk-cone/{hotspot_id}")
-def get_risk_cone(
-    hotspot_id: str, 
-    lat: float = Query(..., description="Latitude of hotspot"), 
-    lon: float = Query(..., description="Longitude of hotspot"),
-    wind_speed: float = Query(..., description="Wind speed in km/h"),
-    wind_direction: float = Query(..., description="Wind direction in degrees")
-):
-    """
-    Returns a GeoJSON Polygon representing a projected spread direction based on wind.
-    """
+def legacy_risk_cone(
+    hotspot_id: str,
+    lat: float = Q(...),
+    lon: float = Q(...),
+    wind_speed: float = Q(...),
+    wind_direction: float = Q(...),
+) -> Dict[str, Any]:
+    """Legacy cone endpoint — now returns an Anderson 1983 ellipse as GeoJSON."""
+    from services.risk import generate_risk_cone
     feature = generate_risk_cone(lat, lon, wind_speed, wind_direction)
-    
-    return {
-        "type": "FeatureCollection",
-        "features": [feature]
-    }
+    return {"type": "FeatureCollection", "features": [feature]}
+
+
+# ── Health check ──────────────────────────────────────────────────────────────
+@app.get("/healthz")
+def health() -> Dict[str, str]:
+    return {"status": "ok", "data_source": config.DATA_SOURCE}
+
+
+# ── Startup: warm the synthetic cache ─────────────────────────────────────────
+@app.on_event("startup")
+def warm_cache() -> None:
+    if config.DATA_SOURCE in ("synthetic", "hybrid"):
+        from synthetic.generator import get_cached_hotspots
+        df = get_cached_hotspots(days=config.SYNTHETIC_DAYS, seed=config.SYNTHETIC_SEED)
+        print(f"[startup] Synthetic cache warmed: {len(df)} hotspots (seed={config.SYNTHETIC_SEED}, days={config.SYNTHETIC_DAYS})")
+
 
 if __name__ == "__main__":
     import uvicorn

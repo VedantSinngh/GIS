@@ -8,3 +8,11 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: DATA_SOURCE
+        value: synthetic
+      - key: SYNTHETIC_SEED
+        value: "42"
+      - key: SYNTHETIC_DAYS
+        value: "30"
+      - key: ALLOWED_ORIGINS
+        value: "*"
